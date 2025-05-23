@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Top Like Leaderboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      background: transparent;
+      color: #fff;
+    }
+
+    .leaderboard {
+      width: 360px;
+      padding: 16px;
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.6);
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      animation: slideIn 1s ease;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      margin-bottom: 16px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .user {
+      display: flex;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+
+    .rank {
+      font-size: 1.2rem;
+      width: 28px;
+      text-align: center;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      overflow: hidden;
+      margin: 0 12px;
+      border: 2px solid #fff;
+      position: relative;
+      transition: transform 0.3s ease;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .crown {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 28px;
+      animation: crownPop 1s ease infinite alternate;
+    }
+
+    .username {
+      flex: 1;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .likes {
+      font-weight: bold;
+      font-size: 0.95rem;
+      color: #ffd700;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes crownPop {
+      0% { transform: translate(-50%, 0); }
+      100% { transform: translate(-50%, -4px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="leaderboard">
+    <h2>🔹 Top Likers</h2>
+    <div id="top-likers"></div>
+  </div>
+
+  <script>
+    const dummyLikers = [
+      { username: 'QueenBee', likes: 1200, avatar: 'https://i.pravatar.cc/42?img=1' },
+      { username: 'TapMaster', likes: 980, avatar: 'https://i.pravatar.cc/42?img=2' },
+      { username: 'Likezilla', likes: 870, avatar: 'https://i.pravatar.cc/42?img=3' },
+      { username: 'HeartsOnFire', likes: 820, avatar: 'https://i.pravatar.cc/42?img=4' },
+      { username: 'StormTap', likes: 790, avatar: 'https://i.pravatar.cc/42?img=5' },
+      { username: 'TapCrush', likes: 720, avatar: 'https://i.pravatar.cc/42?img=6' },
+      { username: 'LikerX', likes: 670, avatar: 'https://i.pravatar.cc/42?img=7' },
+      { username: 'Taptastik', likes: 610, avatar: 'https://i.pravatar.cc/42?img=8' },
+    ];
+
+    function renderLeaderboard(likers) {
+      const container = document.getElementById('top-likers');
+      container.innerHTML = '';
+      likers.forEach((user, i) => {
+        const div = document.createElement('div');
+        div.className = 'user';
+        div.innerHTML = `
+          <div class="rank">${i + 1}</div>
+          <div class="avatar">
+            <img src="${user.avatar}" alt="avatar">
+            ${i === 0 ? '<img src="https://cdn-icons-png.flaticon.com/512/1828/1828884.png" class="crown" alt="crown">' : ''}
+          </div>
+          <div class="username">@${user.username}</div>
+          <div class="likes">👍 ${user.likes}
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    renderLeaderboard(dummyLikers);
+  </script>
+</body>
+</html>
