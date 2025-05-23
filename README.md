@@ -1,52 +1,46 @@
-Berikut adalah README lengkap (siap untuk GitHub) untuk proyek kamu yang menghubungkan event TikTok (chat, like, gift, dsb) ke **IndoFinity** melalui **WebSocket/Socket.IO** dan menampilkan overlay ke **TikTok Live Studio**.
+Berikut adalah file `README.md` **lengkap dan rapi** untuk kamu simpan di GitHub. Isinya sudah disesuaikan agar kamu, sebagai pemula, bisa membaca ulang dengan mudah dan menjalankan ulang proyek kapan saja.
 
 ---
 
-## 📦 TikTok Live Connector to IndoFinity Overlay
+## 📺 TikTok Live Bot + IndoFinity Overlay
 
-Proyek ini menghubungkan event TikTok LIVE (seperti gift, like, join, chat) menggunakan [`tiktok-live-connector`](https://www.npmjs.com/package/tiktok-live-connector) dan mengirimkan data secara **real-time** ke **IndoFinity** via Socket.IO (`http://localhost:62025`) untuk ditampilkan di TikTok Live Studio sebagai **custom overlay**.
+**Menampilkan event TikTok (like, chat, gift, dll) ke layar TikTok Live Studio melalui overlay dan mengirimkan ke IndoFinity WebSocket (Socket.IO)**
+Username Live: `cilla1_popcard`
 
 ---
 
-## 📁 Struktur Folder
+### 📁 Struktur Folder
 
 ```
-C:\Users\USER\tiktok-live-bot\
+tiktok-live-bot/
 │
-├── public\
-│   └── overlay.html     # Halaman overlay (dipakai di TikTok Live Studio)
-│
-├── config.json          # Konfigurasi username TikTok
-├── app.js               # Logic event TikTok
-├── server.js            # Express + WebSocket server
-└── package.json         # Konfigurasi dependencies Node.js
+├── server.js               <- Server utama: koneksi TikTok & IndoFinity
+├── config.json             <- Konfigurasi username TikTok
+├── package.json            <- Info dependencies
+├── public/
+│   └── overlay.html        <- File overlay untuk ditampilkan di TikTok Studio
 ```
 
 ---
 
-## ✅ Fitur
+### ✅ 1. Setup Awal
 
-* Terhubung ke akun TikTok Live (real-time).
-* Menerima event: `chat`, `like`, `gift`, `follow`, `share`, `join`.
-* Kirim event ke **IndoFinity** via `Socket.IO`.
-* Buat overlay HTML untuk ditampilkan di TikTok Live Studio.
-* Custom list: Top Like, Gift, dll.
+#### Langkah pertama:
 
----
+Install Node.js v18+ dari [https://nodejs.org/](https://nodejs.org/)
 
-## 🛠️ Cara Instalasi (Windows)
-
-### 1. Clone atau Download Proyek
+#### Jalankan terminal:
 
 ```bash
-cd C:\Users\USER\
-git clone https://github.com/nama-anda/tiktok-live-bot.git
-cd tiktok-live-bot
+cd C:\Users\USER\tiktok-live-bot
+npm install
 ```
 
-### 2. Buat File Konfigurasi
+---
 
-**config.json**
+### ✅ 2. Isi File-File Proyek
+
+#### `config.json`
 
 ```json
 {
@@ -54,144 +48,157 @@ cd tiktok-live-bot
 }
 ```
 
-Ganti dengan username TikTok kamu yang sedang **LIVE**.
-
 ---
 
-### 3. Install Dependency
+#### `package.json`
 
-```bash
-npm init -y
-npm install express socket.io socket.io-client tiktok-live-connector@1.5.8
+```json
+{
+  "name": "tiktok-live-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5",
+    "tiktok-live-connector": "^2.0.5"
+  }
+}
 ```
 
-> Pastikan kamu menggunakan versi `1.5.8` karena versi `2.x` belum tersedia di NPM.
-
 ---
 
-### 4. Buat File `server.js`
+#### `server.js`
 
 ```js
-// server.js
 import express from 'express';
-import { createServer } from 'http';
+import http from 'http';
 import { Server } from 'socket.io';
+import { io as ClientIO } from 'socket.io-client';
+import { WebcastPushConnection } from 'tiktok-live-connector';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
-const app = express();
-const server = createServer(app);
-const io = new Server(server);
-const PORT = 3000;
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Serve static file untuk overlay
-app.use(express.static(path.join(__dirname, 'public')));
-
-server.listen(PORT, () => {
-  console.log(`✅ Server jalan di http://localhost:${PORT}`);
-});
-
-export default io;
-```
-
----
-
-### 5. Buat File `app.js`
-
-```js
-// app.js
-import TikTokLiveConnection from 'tiktok-live-connector';
-import fs from 'fs';
-import io from './server.js';
-import { io as clientIO } from 'socket.io-client';
-
-// Load username dari config
-const config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
+// Config
+const config = JSON.parse(fs.readFileSync('./config.json'));
 const tiktokUsername = config.username;
 
-// Connect ke TikTok
-const tiktok = new TikTokLiveConnection(tiktokUsername);
-const indofinitySocket = clientIO("http://localhost:62025");
+// Express & Socket.IO Server
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-// Forward semua event ke IndoFinity & klien
-const forwardEvent = (event, data) => {
-  console.log(`📡 Event: ${event}`, data);
+app.use(express.static(path.join(__dirname, 'public')));
+server.listen(3000, () => {
+  console.log('✅ Server running at http://localhost:3000');
+});
 
-  // Kirim ke client overlay
-  io.emit(event, data);
+// IndoFinity WebSocket Connection (Socket.IO)
+const indofinitySocket = ClientIO('http://localhost:62025');
 
-  // Kirim ke IndoFinity
-  indofinitySocket.emit("message", {
-    event,
-    data,
-  });
-};
+indofinitySocket.on('connect', () => {
+  console.log('🛰️ Terhubung ke IndoFinity');
+});
+indofinitySocket.on('connect_error', (err) => {
+  console.error('❌ Gagal konek ke IndoFinity:', err);
+});
 
-// Daftar Event TikTok
-tiktok.on('chat', (data) => forwardEvent('chat', data));
-tiktok.on('gift', (data) => forwardEvent('gift', data));
-tiktok.on('like', (data) => forwardEvent('like', data));
-tiktok.on('follow', (data) => forwardEvent('follow', data));
-tiktok.on('share', (data) => forwardEvent('share', data));
-tiktok.on('join', (data) => forwardEvent('join', data));
-
-// Handle koneksi
+// TikTok LIVE Connection
+const tiktok = new WebcastPushConnection(tiktokUsername);
 tiktok.connect().then(() => {
-  console.log(`🔗 Terhubung ke TikTok: ${tiktokUsername}`);
-}).catch((err) => {
-  console.error("❌ Gagal konek ke TikTok:", err);
+  console.log(`📡 Terhubung ke TikTok LIVE: ${tiktokUsername}`);
+}).catch(err => {
+  console.error('❌ TikTok Connect Error:', err);
+});
+
+// Event TikTok
+tiktok.on('chat', data => {
+  const payload = { event: 'chat', data };
+  console.log(`[CHAT] ${data.uniqueId}: ${data.comment}`);
+  io.emit('message', payload);
+  indofinitySocket.emit('message', payload);
+});
+
+tiktok.on('like', data => {
+  const payload = { event: 'like', data };
+  console.log(`[LIKE] ${data.uniqueId} memberi like`);
+  io.emit('message', payload);
+  indofinitySocket.emit('message', payload);
 });
 ```
 
 ---
 
-### 6. Buat File Overlay: `public/overlay.html`
+#### `public/overlay.html`
 
 ```html
-<!-- public/overlay.html -->
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Overlay TikTok</title>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <style>
-    body { margin: 0; font-family: sans-serif; background: transparent; color: white; }
-    #likes { position: absolute; top: 10px; left: 10px; font-size: 20px; }
-    .user { margin-top: 5px; }
+    body {
+      margin: 0;
+      background: transparent;
+      font-family: Arial, sans-serif;
+      color: white;
+      overflow: hidden;
+    }
+    #event-log {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 90%;
+    }
+    .event {
+      margin-bottom: 10px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px 12px;
+      border-radius: 12px;
+      animation: fade 5s ease-out forwards;
+    }
+    @keyframes fade {
+      0% { opacity: 1; transform: translateY(0); }
+      90% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-20px); }
+    }
   </style>
 </head>
 <body>
-  <div id="likes">
-    <strong>🔥 Top Likes:</strong>
-    <div id="likeList"></div>
-  </div>
+  <div id="event-log"></div>
 
   <script>
     const socket = io();
-    const likeList = {};
-    const likeContainer = document.getElementById('likeList');
 
-    const updateLikes = () => {
-      likeContainer.innerHTML = '';
-      const sorted = Object.entries(likeList)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5);
-      for (const [user, count] of sorted) {
-        const div = document.createElement('div');
-        div.className = "user";
-        div.textContent = `@${user} - ${count} tap`;
-        likeContainer.appendChild(div);
+    socket.on('connect', () => {
+      console.log('✅ Overlay terhubung');
+    });
+
+    socket.on('message', ({ event, data }) => {
+      const log = document.getElementById('event-log');
+      const el = document.createElement('div');
+      el.className = 'event';
+
+      if (event === 'like') {
+        el.innerText = `❤️ ${data.uniqueId} memberi like (${data.likeCount})`;
+      } else if (event === 'chat') {
+        el.innerText = `💬 ${data.uniqueId}: ${data.comment}`;
+      } else {
+        el.innerText = `[${event}] ${JSON.stringify(data)}`;
       }
-    };
 
-    socket.on('like', (data) => {
-      const user = data?.uniqueId || "unknown";
-      likeList[user] = (likeList[user] || 0) + data.likeCount;
-      updateLikes();
+      log.appendChild(el);
+      setTimeout(() => el.remove(), 5000);
     });
   </script>
 </body>
@@ -200,59 +207,58 @@ tiktok.connect().then(() => {
 
 ---
 
-## ▶️ Jalankan Server
+### ▶️ Cara Menjalankan
+
+1. Buka terminal:
 
 ```bash
-node app.js
+cd C:\Users\USER\tiktok-live-bot
+npm install
+node server.js
 ```
 
----
-
-## 📺 Cara Menampilkan di TikTok Live Studio
-
-1. Buka TikTok Live Studio.
-2. Tambah **Web Overlay**.
-3. Masukkan URL:
+2. Buka browser:
 
 ```
-http://localhost:3000/overlay.html
+http://localhost:3000/public/overlay.html
 ```
 
-4. Klik "Tampilkan".
+3. Masukkan link itu ke TikTok Live Studio → **Browser Source**
+   Gunakan ukuran: **1280x720** atau sesuai layar live kamu.
 
 ---
 
-## 🧪 Testing
+### 🚀 Fitur Saat Ini
 
-Gunakan username yang **sedang LIVE**, seperti:
-
-```json
-{
-  "username": "cilla1_popcard"
-}
-```
-
-Lalu lakukan **tap / gift** dari HP lain untuk melihat hasilnya muncul di layar overlay.
+* Menerima event **chat** dan **like**
+* Kirim ke **IndoFinity (Socket.IO port 62025)**
+* Tampilkan ke layar lewat **overlay**
+* Bisa dikembangkan untuk **gift**, **join**, **ranking**, dan lainnya
 
 ---
 
-## ❓ FAQ
+### 🛠️ Next Upgrade?
 
-**Q: IndoFinity tidak menerima data?**
-A: Pastikan `IndoFinity Socket` aktif di `http://localhost:62025`.
-
-**Q: Overlay tidak muncul di TikTok Live Studio?**
-A: Cek `localhost:3000/overlay.html` di browser. Pastikan file `public/overlay.html` ada dan tidak error.
-
----
-
-## 🧼 Lisensi
-
-MIT License. Bebas digunakan dan dimodifikasi.
+* 🔝 Leaderboard Top Like
+* 🎁 Animasi Gift (Top Gifter)
+* 🎉 Tampilan Join / Follow
+* 🎨 Kustomisasi tema & efek
 
 ---
 
-Kalau kamu ingin saya upload contoh ini ke GitHub untuk kamu fork, tinggal bilang saja:
-**"Upload ke GitHub"** – nanti saya buatkan public repo contoh.
+### 🤝 Credits
 
-Semoga README ini membantu!
+* [tiktok-live-connector](https://github.com/zerodytrash/TikTok-Live-Connector)
+* IndoFinity for overlay Socket.IO endpoint
+
+---
+
+Jika kamu ingin saya bantu kembangkan lebih lanjut, cukup bilang:
+**"Lanjutkan ke Top Like / Gift / Animasi masuk"**
+Saya siap bantu 💡
+
+---
+
+Kamu bisa **copy-paste** isi ini ke file `README.md` di GitHub repo kamu, lalu tinggal commit.
+
+Perlu bantuan commit ke GitHub juga? Kasih tahu saja!
